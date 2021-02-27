@@ -89,7 +89,8 @@ allowed = function(url, parenturl)
   or string.match(url, "^https?://www%.nicovideo%.jp/tag/")
   or string.match(url, "^https?://dic%.nicovideo%.jp/")
   or string.match(url, "^https?://sp%.nicovideo%.jp/")
-  or string.match(url, "^https://www%.nicovideo%.jp/api/ria/log%.gif%?name=WatchExceptionPagePvLog") then
+  or string.match(url, "^https://www%.nicovideo%.jp/api/ria/log%.gif%?name=WatchExceptionPagePvLog")
+  or string.match(url, "^https://www%.nicovideo%.jp/user/") then
     return false
   end
 
@@ -112,15 +113,6 @@ allowed = function(url, parenturl)
 end
 
 wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_parsed, iri, verdict, reason)
-  local url = urlpos["url"]["url"]
-  if downloaded[url] == true or addedtolist[url] == true then
-    return false
-  end
-  if allowed(url) then
-    addedtolist[url] = true
-    return true
-  end
-
   return false
 end
 
@@ -190,6 +182,10 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   end
   
+  local function get_logged_in(url)
+    table.insert(urls, { url=url, headers={["Cookie"]=user_auth_cookie}})
+  end
+  
   if string.match(url, "^https?://www%.nicovideo%.jp/watch/") and status_code == 200 then
     html = read_file(file)
     -- Georestricted video
@@ -197,6 +193,14 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       print("Video is georestricted - aborting.") -- This is not a debug print, do not remove
       abortgrab = true
     end
+    
+    -- My best guess is that these are pages of since-deleted videos haunting a cache somewhere
+    -- Even the page layout seems to be slightly different
+    -- Nothing useful to extract - what is useful will end up in the warc anyhow
+    if string.match(html, 'ログインして今すぐ視聴') then
+      return {}
+    end
+    
     -- Misc errors that give 200s (e.g. vid:sm8 (deleted by administrator))
     if not string.match(html, '<link href="https://nicovideo%.cdn%.nimg%.jp/web/styles/bundle/pages_watch_WatchExceptionPage%.css') then
       -- These scripts are essential for playback, but their URLs (specifically the hex at the end) are unstable
@@ -220,7 +224,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       thread_id_section = string.match(html, "threadIds&quot(.+)&quot;tags")
       p_assert(thread_id_section)
       for thread_id in string.gmatch(thread_id_section, "[0-9][0-9][0-9]+") do
-        table.insert(urls, { url="https://flapi.nicovideo.jp/api/getwaybackkey?thread=" .. thread_id, headers={["Cookie"]=user_auth_cookie}})
+        get_logged_in("https://flapi.nicovideo.jp/api/getwaybackkey?thread=" .. thread_id)
       end
     end
   end

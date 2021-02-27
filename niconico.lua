@@ -23,6 +23,8 @@ local post_finished = {}
 
 local user_id = nil
 
+user_auth_cookie = "user_session=user_session_118049508_78e2b3b9c0b55902bd7d65c57ecf43ce41b7083b012f7b5cde49bc2dff13954f"
+
 
 
 if urlparse == nil or http == nil then
@@ -218,15 +220,17 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       thread_id_section = string.match(html, "threadIds&quot(.+)&quot;tags")
       p_assert(thread_id_section)
       for thread_id in string.gmatch(thread_id_section, "[0-9][0-9][0-9]+") do
-        check("https://flapi.nicovideo.jp/api/getwaybackkey?thread=" .. thread_id)
+        table.insert(urls, { url="https://flapi.nicovideo.jp/api/getwaybackkey?thread=" .. thread_id, headers={["Cookie"]=user_auth_cookie}})
       end
     end
   end
   
   local function nextpost()
-    post_finished[post_current] = true
+    if post_current ~= nil then
+      post_finished[post_current] = true
+    end
     post_current = table.remove(post_queue)
-    table.insert(urls, { url="http://nmsg.nicovideo.jp/api", post_data=post_current,headers={["Content-Type"]="text/plain"} })
+    table.insert(urls, { url="http://nmsg.nicovideo.jp/api", post_data=post_current,headers={["Content-Type"]="text/plain", ["Cookie"]=user_auth_cookie}})
     print_debug(post_current)
   end
     
@@ -236,16 +240,13 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
     table.insert(post_queue, data)
     if post_current == nil then
-      post_current = table.remove(post_queue)
-      if post_current ~= nil then
-        table.insert(urls, { url="http://nmsg.nicovideo.jp/api", post_data=post_current, headers={["Content-Type"]="text/plain"}})
-        print_debug(post_current)
-      end
+      nextpost()
     end
   end
   
   if string.match(url, "^https?://flapi.nicovideo.jp/api/getwaybackkey") and status_code == 200 then
     html = read_file(file)
+    print_debug("WBK content is " .. html)
     thread_id = string.match(url, "thread=([0-9]+)$")
     waybackkey = string.match(html, "waybackkey=(.+)$")
     p_assert(thread_id)

@@ -204,9 +204,11 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     -- Misc errors that give 200s (e.g. vid:sm8 (deleted by administrator))
     if not string.match(html, '<link href="https://nicovideo%.cdn%.nimg%.jp/web/styles/bundle/pages_watch_WatchExceptionPage%.css') then
       -- These scripts are essential for playback, but their URLs (specifically the hex at the end) are unstable
-      for url in string.gmatch(html, 'src="([^"]+)"') do
-        if string.match(url, "watch_dll.+%.js$") or string.match(url, "watch_app.+%.js$") then
-          check(url, true)
+      if math.random() < 0.01 then
+        for url in string.gmatch(html, 'src="([^"]+)"') do
+          if string.match(url, "watch_dll.+%.js$") or string.match(url, "watch_app.+%.js$") then
+            check(url, true)
+          end
         end
       end
       
@@ -254,13 +256,14 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     thread_id = string.match(url, "thread=([0-9]+)$")
     waybackkey = string.match(html, "waybackkey=(.+)$")
     p_assert(thread_id)
-    p_assert(waybackkey)
-    -- Japanese
-    addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '"/>')
-    -- English
-    addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '" language="1"/>')
-    -- Chinese
-    addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '" language="2"/>')
+    if waybackkey then -- Retrying is handled in httploop_result
+      -- Japanese
+      addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '"/>')
+      -- English
+      addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '" language="1"/>')
+      -- Chinese
+      addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '" language="2"/>')
+    end
   end
   
   if url == "http://nmsg.nicovideo.jp/api" and status_code == 200 then
@@ -337,6 +340,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     return wget.actions.ABORT
   end
 
+  local do_retry = false
   
   if status_code == 0
     or (status_code > 400 and status_code ~= 404) then
@@ -346,6 +350,22 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     if not (allowed(url["url"], nil) or string.match(url["url"], "^https?://www%.nicovideo%.jp/watch/")) then
       maxtries = 3
     end
+    do_retry = true
+  end
+  
+  if string.match(url["url"], "^https?://flapi.nicovideo.jp/api/getwaybackkey") and status_code == 200 then
+    html = read_file(http_stat["local_file"])
+    print_debug("WBK content from HLR is " .. html)
+    waybackkey = string.match(html, "waybackkey=(.+)$")
+    if not waybackkey then
+      do_retry = true
+      maxtries = 12
+      print_debug("HLR: retring WBK")
+    end
+  end
+  
+  
+  if do_retry then
     if tries >= maxtries then
       io.stdout:write("I give up...\n")
       io.stdout:flush()
@@ -358,23 +378,22 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     else
       if string.match(url["url"], "^https?://www%.nicovideo%.jp/watch/") and status_code == 503 then
         -- Their version of a 429
-        os.execute("sleep 60")
+        sleep_time = 60
       else
-        os.execute("sleep " .. math.floor(math.pow(2, tries)))
+        sleep_time = math.floor(math.pow(2, tries))
       end
       tries = tries + 1
-      return wget.actions.CONTINUE
     end
   end
 
-  tries = 0
 
-  local sleep_time = 0
-
-  if sleep_time > 0.001 then
+  if do_retry and sleep_time > 0.001 then
+    print("Sleeping " .. sleep_time .. "s")
     os.execute("sleep " .. sleep_time)
+    return wget.actions.CONTINUE
   end
-
+  
+  tries = 0
   return wget.actions.NOTHING
 end
 

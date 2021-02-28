@@ -39,7 +39,10 @@ WGET_AT = find_executable(
     [
         'GNU Wget 1.20.3-at.20210212.02',
     ],
-    ['./wget-at']
+    [
+        './wget-at',
+        '/home/warrior/data/wget-at'
+    ]
 )
 
 if not WGET_AT:

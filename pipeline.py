@@ -54,12 +54,12 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20210310.01'
+VERSION = '20210310.02'
 #USER_AGENT = 'Archive Team (ircs://irc.hackint.org#niconino https://webirc.hackint.org/#irc://irc.hackint.org/#niconino)'
 TRACKER_ID = 'niconico'
 #TRACKER_HOST = 'legacy-api.arpa.li'
 TRACKER_HOST = "legacy-api.arpa.li"
-MULTI_ITEM_SIZE = 30
+MULTI_ITEM_SIZE = 1
 
 
 ###########################################################################

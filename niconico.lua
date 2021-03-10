@@ -352,11 +352,14 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
         return wget.actions.ABORT
       end
     else
+      if string.match(url["url"], "^https?://www%.nicovideo%.jp/watch/") and status_code == 403 then
+        return wget.actions.ABORT
+      end
       if string.match(url["url"], "^https?://www%.nicovideo%.jp/watch/") and status_code == 503 then
         -- Their version of a 429
         sleep_time = 60
       else
-        sleep_time = math.floor(math.pow(2, tries))
+        sleep_time = 10
       end
       tries = tries + 1
     end

@@ -219,15 +219,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         profile_picture = string.gsub(profile_picture, "\\/", "/")
         check(profile_picture, true)
       end
-      
-      -- Now start the comment downloading process
-      --user_id = string.match(html, "user.user_id = '([0-9]+)'")
-      user_id = "118049508"
-      thread_id_section = string.match(html, "threadIds&quot(.+)&quot;tags")
-      p_assert(thread_id_section)
-      for thread_id in string.gmatch(thread_id_section, "[0-9][0-9][0-9]+") do
-        get_logged_in("https://flapi.nicovideo.jp/api/getwaybackkey?thread=" .. thread_id)
-      end
     end
   end
   
@@ -250,21 +241,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   end
   
-  if string.match(url, "^https?://flapi.nicovideo.jp/api/getwaybackkey") and status_code == 200 then
-    html = read_file(file)
-    print_debug("WBK content is " .. html)
-    thread_id = string.match(url, "thread=([0-9]+)$")
-    waybackkey = string.match(html, "waybackkey=(.+)$")
-    p_assert(thread_id)
-    if waybackkey then -- Retrying is handled in httploop_result
-      -- Japanese
-      addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '"/>')
-      -- English
-      addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '" language="1"/>')
-      -- Chinese
-      addpost('<thread thread="' .. thread_id .. '" version="20061206" res_from="1" when="1700000000" waybackkey="' .. waybackkey .. '" user_id="' .. user_id .. '" language="2"/>')
-    end
-  end
   
   if url == "http://nmsg.nicovideo.jp/api" and status_code == 200 then
     html = read_file(file)

@@ -67,33 +67,6 @@ print_debug = function(a)
 end
 
 allowed = function(url, parenturl)
-  -- Do not queue any more watch pages
-  -- Also prevents it from picking up many junk links that are on these pages for some reason
-  if string.match(url, "^https?://www%.nicovideo%.jp/watch/") then
-    return false
-  end
-  
-  
-  if string.match(url, "^https?://account%.nicovideo%.jp")
-  or (string.match(url, "^https?://nicovideo%.cdn%.nimg%.jp")
-      and not string.match(url, "nicoaccount"))
-  or string.match(url, "^https?://m%.nicovideo%.jp")
-  or string.match(url, "^https?://embed%.nicovideo%.jp")
-  or string.match(url, "^https?://qa%.nicovideo%.jp")
-  or string.match(url, "^https?://secure%.nicovideo%.jp") 
-  or string.match(url, "^https?://[^/]googletagmanager")
-  or string.match(url, "^https?://[^/]+%.ads%.nicovideo%.jp")
-  or string.match(url, "^https?://ads%.nicovideo%.jp")
-  or string.match(url, "^https?://nmsg%.nicovideo%.jp")
-  or string.match(url, "^https?://www%.nicovideo%.jp/video_top/")
-  or string.match(url, "^https?://www%.nicovideo%.jp/tag/")
-  or string.match(url, "^https?://dic%.nicovideo%.jp/")
-  or string.match(url, "^https?://sp%.nicovideo%.jp/")
-  or string.match(url, "^https://www%.nicovideo%.jp/api/ria/log%.gif%?name=WatchExceptionPagePvLog")
-  or string.match(url, "^https://www%.nicovideo%.jp/user/") then
-    return false
-  end
-
   local tested = {}
   for s in string.gmatch(url, "([^/]+)") do
     if tested[s] == nil then
@@ -105,11 +78,7 @@ allowed = function(url, parenturl)
     tested[s] = tested[s] + 1
   end
   
-  if string.match(url, "^https?://[^/]+%.nicovideo%.jp") then
-    return true
-  end
-
-  --#return false
+  return false
 end
 
 wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_parsed, iri, verdict, reason)
@@ -302,7 +271,9 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     if downloaded[newloc] == true or addedtolist[newloc] == true
       or not allowed(newloc, url["url"]) then
       tries = 0
-      return wget.actions.EXIT
+      -- Should not happen
+      print("Unexpected redirect, aborting...")
+      return wget.actions.ABORT
     end
   end
 

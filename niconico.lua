@@ -53,10 +53,13 @@ io.stdout:setvbuf("no") -- So prints are not buffered - http://lua.2524044.n2.na
 
 p_assert = function(v)
   if not v then
-    print("Assertion failed - aborting item")
-    print(debug.traceback())
-    abortgrab = true
+    --print("Assertion failed - aborting item")
+	print("Unable to locate profile picture continuing")
+    --print(debug.traceback())
+    --abortgrab = true
+	return false
   end
+  return true
 end
 
 do_debug = false
@@ -183,10 +186,11 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       
       profile_picture = string.match(html, "(https:\\/\\/secure%-dcdn%.cdn%.nimg%.jp\\/nicoaccount\\/usericon\\/[0-9]+\\/[0-9]+%.[a-z]+%?[0-9]+)")
       if not string.match(html, "(https:\\/\\/secure%-dcdn%.cdn%.nimg%.jp\\/nicoaccount\\/usericon\\/defaults\\/blank.jpg)") then -- Don't want this, obviously
-        p_assert(profile_picture)
-        
-        profile_picture = string.gsub(profile_picture, "\\/", "/")
-        check(profile_picture, true)
+        pf_pic_assert = p_assert(profile_picture)
+        if pf_pic_assert then 
+          profile_picture = string.gsub(profile_picture, "\\/", "/")
+          check(profile_picture, true)
+		end
       end
     end
   end

@@ -289,9 +289,13 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
 
   local do_retry = false
   local maxtries = 12
-  
-  if status_code == 0
-    or (status_code > 400 and status_code ~= 404) then
+  html = read_file(http_stat["local_file"])
+  private_video = string.match(html, "この動画は非公開設定のため視聴できません。")
+  if private_video then
+    io.stdout:write("Video privated, archiving anyway\n")
+    io.stdout:flush()
+  end
+  if status_code == 0 or (status_code > 400 and status_code ~= 404 and status_code ~= 403) or (status_code == 403 and not private_video) then
     io.stdout:write("Server returned " .. http_stat.statcode .. " (" .. err .. "). Sleeping.\n")
     io.stdout:flush()
     if not (allowed(url["url"], nil) or string.match(url["url"], "^https?://www%.nicovideo%.jp/watch/")) then

@@ -162,8 +162,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     html = read_file(file)
     -- Georestricted video
     if string.match(html, 'された地域と同じ地域からのみ視聴できます') or string.match(html, '国からは視聴できません') then
-      print("Video is georestricted - aborting.") -- This is not a debug print, do not remove
-      abortgrab = true
+      print("Video is georestricted - continuing.") -- This is not a debug print, do not remove
+      --abortgrab = true
     end
     
     -- My best guess is that these are pages of since-deleted videos haunting a cache somewhere

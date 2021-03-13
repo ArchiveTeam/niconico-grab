@@ -158,23 +158,23 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     table.insert(urls, { url=url, headers={["Cookie"]=user_auth_cookie}})
   end
   
-  if string.match(newloc, "^https://account%.nicovideo%.jp/login") and status_code == 200 then
-    local next_url = string.match(url, "next_url=([^&]+)$")
+  if string.match(url, "^https://account%.nicovideo%.jp/login") and status_code == 200 then
+    local next_url_e = string.match(url, "next_url=([^&]+)$")
     if not next_url_e then
       print("N_U_E not found")
       abortgrab = true
     end
 
-    next_url_e = urlparse.unescape(next_url)
+    next_url_e = urlparse.unescape(next_url_e)
     if string.match(next_url_e, "^/watch") then
-      next_url_e = "https://www.nicovideo.jp" .. next_url_e)
+      next_url_e = "https://www.nicovideo.jp" .. next_url_e
     elseif string.match(next_url_e, "^http") then
       next_url_e = next_url_e
     else
       print("Unknown N_U_E form")
       abortgrab = true
     end
-    get_logged_in(next_url_e)
+    get_logged_in(next_url_e .. "#")
   end
   
   if string.match(url, "^https?://www%.nicovideo%.jp/watch/") and status_code == 200 then
@@ -294,12 +294,12 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
     if downloaded[newloc] == true or addedtolist[newloc] == true then
         tries = 0
         return wget.actions.EXIT
-    elseif string.match(newloc, "/" .. (string.match(url["url"], "/([a-z][a-z][0-9]+)$") .. "$") then
+    elseif string.match(newloc, "/" .. string.match(url["url"], "/([a-z][a-z][0-9]+)$") .. "$") then
       -- Redirect to page with metadata
-      return wget.actions.CONTINUE
+      return wget.actions.NOTHING
     elseif string.match(newloc, "^https://account%.nicovideo%.jp/login") and string.match(url["url"], "^https?://www%.nicovideo%.jp/watch/") then
       -- Watch pages redirecting to a login page
-      return wget.actions.CONTINUE
+      return wget.actions.NOTHING
     else
       tries = 0
       -- Should not happen
